@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:mulerequester="http://www.mulesoft.org/schema/mule/mulerequester" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mulerequester http://www.mulesoft.org/schema/mule/mulerequester/current/mule-mulerequester.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <file:connector name="File" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
+    <flow name="kerf-initializeFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"correlation_id": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
+	"pid": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
+	"directory": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
+	"excludes": [
+		"_complex"
+	]
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <amqp:outbound-endpoint queueName="${rabbit.list.request}" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="AMQP-0-9"/>
+        <logger message="Requested a dir listing" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="kerf-initializeFlow1">
+        <amqp:inbound-endpoint queueName="${rabbit.list.response}" responseTimeout="10000" exchange-pattern="request-response" connector-ref="OutboundAMQPConnector" doc:name="AMQP-0-9"/>
+        <byte-array-to-string-transformer mimeType="application/json" doc:name="Byte Array to String"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data/json.json"/>
+            <dw:set-variable variableName="metsfileBasePath"><![CDATA[%dw 1.0
+%output application/java
+---
+(payload.files filter (not ($ contains '/') or not ($ contains '.xml')))[0]]]></dw:set-variable>
+            <dw:set-variable variableName="directory"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.directory]]></dw:set-variable>
+        </dw:transform-message>
+        <logger level="INFO" doc:name="Logger"/>
+        <mulerequester:request resource="file://#[flowVars.directory + '/' + flowVars.metsfileBasePath]?connector=File" doc:name="Mule Requester"/>
+        <byte-array-to-string-transformer encoding="UTF-8" mimeType="application/xml" doc:name="Byte Array to String"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="code_nummer"><![CDATA[%dw 1.0
+%output application/java
+---
+((payload..*title) filter ((sizeOf $) == 3))[0]]]></dw:set-variable>
+            <dw:set-variable variableName="allFiles"><![CDATA[%dw 1.0
+%output application/java
+---
+payload..*file map {
+	id: $.@ID,
+	checksum: $.@CHECKSUM,
+	mimetype: $.@MIMETYPE,
+	groupid: $.@GROUPID,
+	admid: $.@ADMID,
+	path: $.FLocat.@href replace 'file:///' with ''
+}]]></dw:set-variable>
+        </dw:transform-message>
+        <enricher source="#[payload[0]]" target="#[flowVars.dbResult]" doc:name="Message Enricher">
+            <db:select config-ref="Generic_Database_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[SELECT * FROM kerf_metadata WHERE code_nummer = #[flowVars.code_nummer];]]></db:parameterized-query>
+            </db:select>
+        </enricher>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data/empty.xml"/>
+            <dw:input-variable doc:sample="sample_data/MyPojo.dwl" variableName="directory"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	'pid': 'abcdefghij',
+	'id': flowVars.directory,
+	'directory': flowVars.directory,
+	'fileUse': {
+	    'essence': 'TAPE-SHARE-EVENTS',
+	    'browse': 'DISK-SHARE-EVENTS',
+	    'metadata': 'DISK-SHARE-EVENTS',
+	    'video': 'TAPE-SHARE-EVENTS',
+	    'archive': 'TAPE-SHARE-EVENTS'
+	},
+	'createOriginalZip': false,
+	'metadata': {
+		'digital_object': {
+			'MediaHAVEN_external_metadata': {
+				'title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
+				'MDProperties': {
+					'CP': { '#text': 'Erfgoedcel Kerf' },
+					'CP_id': { '#text': p('kerf.cp_id') },
+					'sp_name': { '#text': flowVars.dbResult.sp_name },
+					'PID': { '#text': 'abcdefghij' },
+					'dc_identifier_localids': {
+						'\$type': 'list',
+						'abraham_id': { '#text': ((payload..identifier) filter (($ contains 'http://')))[0] replace 'http://anet.ua.ac.be/record/opacbnc/' with '' replace '/N' with '' },
+						'abraham_uri': { '#text': ((payload..identifier) filter (($ contains 'http://')))[0] },
+						'code_nummer': { '#text': ((payload..*title) filter ((sizeOf $) == 3))[0] }
+					},
+					'dc_title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
+					'dc_description_categorie': { '#text': payload..type[0] },
+					'dc_languages': {
+						'\$type': 'list',
+						multiselect: 'nl'
+					},
+					'Original_CP': { '#text': payload..source[0] },
+					'dcterms_created': { '#text': payload..date[0] },
+					'dcterms_issued': { '#text': payload..date[0] },
+					'date': { '#text': payload..date[0] },
+					'CreationDate': { '#text': payload..date[0] replace '-' with ':' },
+					'dc_publishers': {
+						'\$type': 'list',
+						Publisher: { '#text': payload..publisher[0] }
+					}
+				}
+			}
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
