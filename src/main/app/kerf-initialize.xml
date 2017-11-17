@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:mulerequester="http://www.mulesoft.org/schema/mule/mulerequester" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:mulerequester="http://www.mulesoft.org/schema/mule/mulerequester" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
@@ -10,37 +10,77 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/mulerequester http://www.mulesoft.org/schema/mule/mulerequester/current/mule-mulerequester.xsd
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/ftp http://www.mulesoft.org/schema/mule/ee/ftp/current/mule-ftp-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd">
     <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
-    <file:connector name="File" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
+    <file:connector name="File" autoDelete="false" streaming="true" validateConnections="true" doc:name="File" />
+    <ftp:connector name="FTP" pollingFrequency="1000" streaming="true" validateConnections="true" doc:name="FTP"/>
+    <http:listener-config name="HTTP_Listener_Configuration1" host="0.0.0.0" port="8082" doc:name="HTTP Listener Configuration"/>
+    <http:request-config name="PID_service" host="${pid.host}" port="8080" basePath="/" doc:name="HTTP Request Configuration"/>
+    <quartz:connector name="Quartz1" validateConnections="true" doc:name="Quartz"/>
     <flow name="kerf-initializeFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
+        <quartz:inbound-endpoint jobName="init" repeatInterval="0" repeatCount="0" startDelay="0" connector-ref="Quartz1" responseTimeout="10000" doc:name="Quartz">
+            <quartz:event-generator-job/>
+        </quartz:inbound-endpoint>
+        <db:select config-ref="Generic_Database_Configuration" doc:name="Select a queued gazet">
+            <db:parameterized-query><![CDATA[select *
+from kerf_gazetten
+where status = 'queued';]]></db:parameterized-query>
+        </db:select>
+        <foreach doc:name="For Each">
+            <set-variable variableName="gazet" value="#[payload.gazet]" doc:name="Set gazet"/>
+            <set-variable variableName="directory" value="#[payload.directory]" doc:name="Set directory"/>
+            <choice doc:name="Already has pid?">
+                <when expression="#[payload.pid != null]">
+                    <expression-component doc:name="Do nothing"><![CDATA[// do nothing]]></expression-component>
+                    <set-variable variableName="pid" value="#[payload.pid.replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
+                </when>
+                <otherwise>
+                    <http:request config-ref="PID_service" path="pid-qas" method="GET" doc:name="Get PID"/>
+                    <byte-array-to-object-transformer mimeType="application/json" doc:name="Byte Array to Object"/>
+                    <json:json-to-object-transformer doc:name="JSON to Object"/>
+                    <set-variable variableName="pid" value="#[payload.get(0).get('id').toString().replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
+                    <db:update config-ref="Generic_Database_Configuration" doc:name="Update gazet with pid">
+                        <db:parameterized-query><![CDATA[update kerf_gazetten
+set pid = #[flowVars.pid]
+where gazet = #[flowVars.gazet]]]></db:parameterized-query>
+                    </db:update>
+                </otherwise>
+            </choice>
+            <dw:transform-message doc:name="Make message with pid and gazet directory">
+                <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 {
-	"correlation_id": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
-	"pid": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
-	"directory": "/Users/dieter/Documents/Bewire/Klanten/VIAA/Kerf/NVM_19490129",
+	"correlation_id": flowVars.gazet,
+	"pid": flowVars.pid,
+	"directory": "/export/home/erfgoedcelkerf/incoming/" ++ flowVars.directory,
 	"excludes": [
 		"_complex"
 	]
 }]]></dw:set-payload>
-        </dw:transform-message>
-        <amqp:outbound-endpoint queueName="${rabbit.list.request}" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="AMQP-0-9"/>
-        <logger message="Requested a dir listing" level="INFO" doc:name="Logger"/>
+            </dw:transform-message>
+            <amqp:outbound-endpoint queueName="kranten_list_directory" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="Send to kranten_list_directory"/>
+            <logger message="Requested a dir listing" level="INFO" doc:name="Logger"/>
+        </foreach>
     </flow>
     <flow name="kerf-initializeFlow1">
-        <amqp:inbound-endpoint queueName="${rabbit.list.response}" responseTimeout="10000" exchange-pattern="request-response" connector-ref="OutboundAMQPConnector" doc:name="AMQP-0-9"/>
+        <amqp:inbound-endpoint queueName="kranten_listing_complete" responseTimeout="10000" exchange-pattern="request-response" connector-ref="OutboundAMQPConnector" doc:name="AMQP-0-9"/>
         <byte-array-to-string-transformer mimeType="application/json" doc:name="Byte Array to String"/>
-        <dw:transform-message doc:name="Transform Message">
+        <dw:transform-message doc:name="Make java object from payload">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
 payload]]></dw:set-payload>
         </dw:transform-message>
-        <dw:transform-message doc:name="Transform Message">
+        <set-variable variableName="pid" value="#[payload.pid]" doc:name="Set pid"/>
+        <set-variable variableName="gazet" value="#[payload.correlation_id]" doc:name="Set gazet with correlation_id"/>
+        <dw:transform-message doc:name="Set directory, metsFileBasePath and ftp credentials">
             <dw:input-payload doc:sample="sample_data/json.json"/>
             <dw:set-variable variableName="metsfileBasePath"><![CDATA[%dw 1.0
 %output application/java
@@ -50,11 +90,25 @@ payload]]></dw:set-payload>
 %output application/java
 ---
 payload.directory]]></dw:set-variable>
+            <dw:set-variable variableName="ftpSourceHost"><![CDATA[%dw 1.0
+%output application/java
+---
+p('ftpSource.host')]]></dw:set-variable>
+            <dw:set-variable variableName="ftpSourceUsername"><![CDATA[%dw 1.0
+%output application/java
+---
+p('ftpSource.username')]]></dw:set-variable>
+            <dw:set-variable variableName="ftpSourcePassword"><![CDATA[%dw 1.0
+%output application/java
+---
+p('ftpSource.password')]]></dw:set-variable>
         </dw:transform-message>
         <logger level="INFO" doc:name="Logger"/>
-        <mulerequester:request resource="file://#[flowVars.directory + '/' + flowVars.metsfileBasePath]?connector=File" doc:name="Mule Requester"/>
+        <mulerequester:request resource="#['ftp://' + flowVars.ftpSourceUsername + ':' + flowVars.ftpSourcePassword + '@' + flowVars.ftpSourceHost + '/' + flowVars.directory + '/' + flowVars.metsfileBasePath + &quot;?connector=FTP&quot;]" doc:name="Get METS"/>
         <byte-array-to-string-transformer encoding="UTF-8" mimeType="application/xml" doc:name="Byte Array to String"/>
-        <dw:transform-message doc:name="Transform Message">
+        <set-variable variableName="mets" value="#[payload]" doc:name="Set mets"/>
+        <dw:transform-message doc:name="Fetch allFiles to-archive files except pdf and jpeg">
+            <dw:input-payload doc:sample="sample_data/empty.xml"/>
             <dw:set-variable variableName="code_nummer"><![CDATA[%dw 1.0
 %output application/java
 ---
@@ -64,18 +118,29 @@ payload.directory]]></dw:set-variable>
 ---
 payload..*file map {
 	id: $.@ID,
-	checksum: $.@CHECKSUM,
-	mimetype: $.@MIMETYPE,
-	groupid: $.@GROUPID,
-	admid: $.@ADMID,
-	path: $.FLocat.@href replace 'file:///' with ''
-}]]></dw:set-variable>
+	md5: lower payload..*messageDigest[$$] when payload..*messageDigest[$$] != null otherwise payload..*messageDigest[$$],
+	//mimetype: $.@MIMETYPE,
+	//groupid: $.@GROUPID,
+	amdid: $.@ADMID,
+	filename: $.FLocat.@href replace /(.*\/)/ with ""	
+} ]]></dw:set-variable>
         </dw:transform-message>
+        <foreach collection="#[flowVars.allFiles]" doc:name="For Each file">
+            <set-variable variableName="filename" value="#[payload.filename]" doc:name="Set filename"/>
+            <set-variable variableName="custom_pid" value="#[flowVars.pid + flowVars.filename.replaceAll(flowVars.gazet, '').replaceAll(&quot;\\..*&quot;, '').toLowerCase()]" doc:name="Set custom_pid (e.g. PID_0004)"/>
+            <db:update config-ref="Generic_Database_Configuration" doc:name="Update kerf_files with md5">
+                <db:parameterized-query><![CDATA[update kerf_files
+set md5 = #[payload.md5], pid = #[flowVars.custom_pid] || '_' || type_viaa
+where filename = #[payload.filename]]]></db:parameterized-query>
+            </db:update>
+        </foreach>
         <enricher source="#[payload[0]]" target="#[flowVars.dbResult]" doc:name="Message Enricher">
-            <db:select config-ref="Generic_Database_Configuration" doc:name="Database">
+            <db:select config-ref="Generic_Database_Configuration" doc:name="Get metadata from kerf with codenummer">
                 <db:parameterized-query><![CDATA[SELECT * FROM kerf_metadata WHERE code_nummer = #[flowVars.code_nummer];]]></db:parameterized-query>
             </db:select>
         </enricher>
+        <set-variable variableName="older_than_1945" value="#[flowVars.dbResult.dc_rights_licenses == '&lt;dc_rights_licenses type=&#8221;list&#8221;&gt;&#8232; &lt;multiselect&gt;VIAA-ONDERWIJS&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-ONDERZOEK&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-INTRA_CP-CONTENT&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-INTRA_CP-METADATA-ALL&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-PUBLIEK-METADATA-ALL&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-PUBLIEK-CONTENT&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;Publiek Domein&lt;/multiselect&gt;&#8232;&lt;/dc_rights_licences&gt;' ? true: false]" doc:name="Set older_than_1945"/>
+        <set-payload value="#[flowVars.mets]" mimeType="application/xml" doc:name="Set Payload with mets"/>
         <dw:transform-message doc:name="Transform Message">
             <dw:input-payload doc:sample="sample_data/empty.xml"/>
             <dw:input-variable doc:sample="sample_data/MyPojo.dwl" variableName="directory"/>
@@ -83,8 +148,8 @@ payload..*file map {
 %output application/json
 ---
 {
-	'pid': 'abcdefghij',
-	'id': flowVars.directory,
+	'pid': flowVars.pid,
+	'id': flowVars.gazet,
 	'directory': flowVars.directory,
 	'fileUse': {
 	    'essence': 'TAPE-SHARE-EVENTS',
@@ -93,36 +158,63 @@ payload..*file map {
 	    'video': 'TAPE-SHARE-EVENTS',
 	    'archive': 'TAPE-SHARE-EVENTS'
 	},
+	"agents": [
+		{
+			"roles": [ "ARCHIVIST" ],
+			"type": "ORGANIZATION",
+			"name": "VIAA"
+		}
+	],
 	'createOriginalZip': false,
 	'metadata': {
 		'digital_object': {
 			'MediaHAVEN_external_metadata': {
 				'title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
 				'MDProperties': {
-					'CP': { '#text': 'Erfgoedcel Kerf' },
+					//'CP': { '#text': 'Erfgoedcel Kerf' },
+					'CP': {'#text': 'Cegesoma'},
 					'CP_id': { '#text': p('kerf.cp_id') },
-					'sp_name': { '#text': flowVars.dbResult.sp_name },
-					'PID': { '#text': 'abcdefghij' },
+					'sp_name': { '#text': 'borndigital' },
+					'PID': { '#text': flowVars.pid },
 					'dc_identifier_localids': {
 						'\$type': 'list',
-						'abraham_id': { '#text': ((payload..identifier) filter (($ contains 'http://')))[0] replace 'http://anet.ua.ac.be/record/opacbnc/' with '' replace '/N' with '' },
-						'abraham_uri': { '#text': ((payload..identifier) filter (($ contains 'http://')))[0] },
-						'code_nummer': { '#text': ((payload..*title) filter ((sizeOf $) == 3))[0] }
+						'abraham_id': [{ '#text': ((payload..*identifier) filter (($ contains 'http://')))[0] replace 'http://anet.ua.ac.be/record/opacbnc/' with '' replace '/N' with '' }],
+						'abraham_uri': [{ '#text': ((payload..*identifier) filter (($ contains 'http://')))[0] }],
+						'code_nummer': [{ '#text': ((payload..*title) filter ((sizeOf $) == 3))[0] }]
 					},
 					'dc_title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
 					'dc_description_categorie': { '#text': payload..type[0] },
 					'dc_languages': {
 						'\$type': 'list',
-						multiselect: 'nl'
+						multiselect: [{
+							'#text': 'nl'
+						}]
 					},
 					'Original_CP': { '#text': payload..source[0] },
 					'dcterms_created': { '#text': payload..date[0] },
 					'dcterms_issued': { '#text': payload..date[0] },
 					'date': { '#text': payload..date[0] },
-					'CreationDate': { '#text': payload..date[0] replace '-' with ':' },
-					'dc_publishers': {
+					'CreationDate': { '#text': payload..date[0] replace '-' with ':'  ++ ' 00:00:00'},
+					('dc_publishers': {
 						'\$type': 'list',
-						Publisher: { '#text': payload..publisher[0] }
+						Publisher: [{ '#text': payload..*publisher[0] }]
+					}) when payload..*publisher[0] != null,
+					'dc_rights_licenses': {
+						'\$type': 'list',
+						multiselect: [{ '#text': 'VIAA-ONDERWIJS'},
+						 { '#text': 'VIAA-ONDERZOEK'},
+						 { '#text': 'VIAA-INTRA_CP-CONTENT'},
+						 { '#text': 'VIAA-INTRA_CP-METADATA-ALL'},
+						 { '#text': 'VIAA-PUBLIEK-METADATA-ALL'},
+						 { '#text': 'VIAA-PUBLIEK-CONTENT'},
+						 { '#text': 'Publiek Domein'}]
+					} when flowVars.older_than_1945 == "true" otherwise 
+					{
+						'\$type': 'list',
+						multiselect: [{ '#text': 'VIAA-ONDERWIJS'},
+						 { '#text': 'VIAA-ONDERZOEK'},
+						 { '#text': 'VIAA-INTRA_CP-CONTENT'},
+						 { '#text': 'VIAA-INTRA_CP-METADATA-ALL'}]
 					}
 				}
 			}
@@ -131,5 +223,12 @@ payload..*file map {
 }]]></dw:set-payload>
         </dw:transform-message>
         <logger level="INFO" doc:name="Logger"/>
+        <amqp:outbound-endpoint queueName="kranten_initialize" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="Send to kranten_initialize"/>
+        <db:update config-ref="Generic_Database_Configuration" doc:name="Update gazet with status processing">
+            <db:parameterized-query><![CDATA[update kerf_gazetten
+set status = 'processing'
+where gazet = #[flowVars.gazet]]]></db:parameterized-query>
+        </db:update>
+        <amqp:acknowledge-message doc:name="AMQP-0-9 Acknowledge Message"/>
     </flow>
 </mule>
