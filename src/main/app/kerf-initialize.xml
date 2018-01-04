@@ -41,7 +41,7 @@ where status = 'queued';]]></db:parameterized-query>
                     <set-variable variableName="pid" value="#[payload.pid.replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
                 </when>
                 <otherwise>
-                    <http:request config-ref="PID_service" path="pid-qas" method="GET" doc:name="Get PID"/>
+                    <http:request config-ref="PID_service" path="pid-prod" method="GET" doc:name="Get PID"/>
                     <byte-array-to-object-transformer mimeType="application/json" doc:name="Byte Array to Object"/>
                     <json:json-to-object-transformer doc:name="JSON to Object"/>
                     <set-variable variableName="pid" value="#[payload.get(0).get('id').toString().replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
@@ -59,7 +59,8 @@ where gazet = #[flowVars.gazet]]]></db:parameterized-query>
 {
 	"correlation_id": flowVars.gazet,
 	"pid": flowVars.pid,
-	"directory": "/export/home/erfgoedcelkerf/incoming/" ++ flowVars.directory,
+	//"directory": "/export/home/erfgoedcelkerf/incoming/" ++ flowVars.directory,
+	directory: "/export/home/viaa/incoming/kERF/kERF_001/" ++ flowVars.directory,
 	"excludes": [
 		"_complex"
 	]
@@ -171,8 +172,7 @@ where filename = #[payload.filename]]]></db:parameterized-query>
 			'MediaHAVEN_external_metadata': {
 				'title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
 				'MDProperties': {
-					//'CP': { '#text': 'Erfgoedcel Kerf' },
-					'CP': {'#text': 'Cegesoma'},
+					'CP': { '#text': 'Erfgoedcel Kerf' },
 					'CP_id': { '#text': p('kerf.cp_id') },
 					'sp_name': { '#text': 'borndigital' },
 					'PID': { '#text': flowVars.pid },
