@@ -24,59 +24,65 @@ http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/q
     <http:request-config name="PID_service" host="${pid.host}" port="8080" basePath="/" doc:name="HTTP Request Configuration"/>
     <quartz:connector name="Quartz1" validateConnections="true" doc:name="Quartz"/>
     <flow name="kerf-initializeFlow">
-        <quartz:inbound-endpoint jobName="init" repeatInterval="0" repeatCount="0" startDelay="0" connector-ref="Quartz1" responseTimeout="10000" doc:name="Quartz">
-            <quartz:event-generator-job/>
-        </quartz:inbound-endpoint>
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="1" timeUnit="MINUTES"/>
+            <logger message="Started kerf initialize" level="INFO" doc:name="Logger"/>
+        </poll>
         <db:select config-ref="Generic_Database_Configuration" doc:name="Select a queued gazet">
             <db:parameterized-query><![CDATA[select *
 from kerf_gazetten
-where status = 'queued';]]></db:parameterized-query>
+where status = 'queued'
+LIMIT 1;]]></db:parameterized-query>
         </db:select>
-        <collection-splitter doc:name="Collection Splitter"/>
-                <set-variable variableName="gazet" value="#[payload.gazet]" doc:name="Set gazet"/>
-                <set-variable variableName="directory" value="#[payload.directory]" doc:name="Set directory"/>
-                <choice doc:name="Already has pid?">
-                    <when expression="#[payload.pid != null]">
-                        <expression-component doc:name="Do nothing"><![CDATA[// do nothing]]></expression-component>
-                        <set-variable variableName="pid" value="#[payload.pid.replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
-                    </when>
-                    <otherwise>
-                        <http:request config-ref="PID_service" path="${pid.path}" method="GET" doc:name="Get PID"/>
-                        <byte-array-to-object-transformer mimeType="application/json" doc:name="Byte Array to Object"/>
-                        <json:json-to-object-transformer doc:name="JSON to Object"/>
-                        <set-variable variableName="pid" value="#[payload.get(0).get('id').toString().replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
-                        <db:update config-ref="Generic_Database_Configuration" doc:name="Update gazet with pid">
-                            <db:parameterized-query><![CDATA[update kerf_gazetten
+        <foreach doc:name="For Each">
+            <set-variable variableName="gazet" value="#[payload.gazet]" doc:name="Set gazet"/>
+            <logger message="Processing #[flowVars.gazet]" level="INFO" doc:name="Logger"/>
+            <set-variable variableName="batch_id" value="#[payload.batch_id]" doc:name="Set batch_id"/>
+            <set-variable variableName="directory" value="#[payload.directory]" doc:name="Set directory"/>
+            <choice doc:name="Already has pid?">
+                <when expression="#[payload.pid != null]">
+                    <expression-component doc:name="Do nothing"><![CDATA[// do nothing]]></expression-component>
+                    <set-variable variableName="pid" value="#[payload.pid.replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
+                </when>
+                <otherwise>
+                    <http:request config-ref="PID_service" path="${pid.path}" method="GET" doc:name="Get PID"/>
+                    <byte-array-to-object-transformer mimeType="application/json" doc:name="Byte Array to Object"/>
+                    <json:json-to-object-transformer doc:name="JSON to Object"/>
+                    <set-variable variableName="pid" value="#[payload.get(0).get('id').toString().replaceAll('&quot;', &quot;&quot;)]" doc:name="Set pid"/>
+                    <db:update config-ref="Generic_Database_Configuration" doc:name="Update gazet with pid">
+                        <db:parameterized-query><![CDATA[update kerf_gazetten
 set pid = #[flowVars.pid]
 where gazet = #[flowVars.gazet]]]></db:parameterized-query>
-                        </db:update>
-                    </otherwise>
-                </choice>
-                <db:update config-ref="Generic_Database_Configuration" doc:name="Database">
-                    <db:parameterized-query><![CDATA[update kerf_gazetten
+                    </db:update>
+                </otherwise>
+            </choice>
+            <db:update config-ref="Generic_Database_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[update kerf_gazetten
 set status = 'requested_dir_listing'
 where gazet = #[flowVars.gazet]]]></db:parameterized-query>
-                </db:update>
-                <dw:transform-message doc:name="Make message with pid and gazet directory">
-                    <dw:set-payload><![CDATA[%dw 1.0
+            </db:update>
+            <dw:transform-message doc:name="Make message with pid and gazet directory">
+                <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 {
 	"correlation_id": flowVars.gazet,
 	"pid": flowVars.pid,
 	//"directory": "/export/home/erfgoedcelkerf/incoming/" ++ flowVars.directory,
-	directory: "/export/home/viaa/incoming/kERF/kERF_001/" ++ flowVars.directory,
+	directory: "/export/home/viaa/incoming/kERF/" ++ flowVars.batch_id ++ "/" ++ flowVars.directory,
 	"excludes": [
-		"_complex"
+		"_complex",
+		"Thumbs.db"
 	]
 }]]></dw:set-payload>
-                </dw:transform-message>
-                <amqp:outbound-endpoint queueName="kranten_list_directory" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="Send to kranten_list_directory"/>
-                <logger message="Requested a dir listing" level="INFO" doc:name="Logger"/>
-                <collection-aggregator doc:name="Collection Aggregator"/>
+            </dw:transform-message>
+            <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+            <amqp:outbound-endpoint queueName="kranten_init_list_directory" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="Send to kranten_list_directory"/>
+            <logger message="Requested a dir listing" level="INFO" doc:name="Logger"/>
+        </foreach>
     </flow>
     <flow name="kerf-initializeFlow1">
-        <amqp:inbound-endpoint queueName="kranten_listing_complete" responseTimeout="60000" exchange-pattern="request-response" connector-ref="InboundAMQPConnector" doc:name="AMQP-0-9"/>
+        <amqp:inbound-endpoint queueName="kranten_init_listing_complete" responseTimeout="60000"  connector-ref="InboundAMQPConnector" doc:name="AMQP-0-9"/>
         <byte-array-to-string-transformer mimeType="application/json" doc:name="Byte Array to String"/>
         <dw:transform-message doc:name="Make java object from payload">
             <dw:set-payload><![CDATA[%dw 1.0
@@ -226,6 +232,7 @@ where filename = #[payload.filename]]]></db:parameterized-query>
 	}
 }]]></dw:set-payload>
         </dw:transform-message>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
         <amqp:outbound-endpoint queueName="kranten_initialize" responseTimeout="10000" connector-ref="OutboundAMQPConnector" doc:name="Send to kranten_initialize"/>
         <until-successful maxRetries="10" millisBetweenRetries="5000" synchronous="true" doc:name="Until Successful">
             <db:update config-ref="Generic_Database_Configuration" doc:name="Update gazet with status processing">
