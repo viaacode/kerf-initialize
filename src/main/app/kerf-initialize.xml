@@ -153,8 +153,13 @@ where filename = #[payload.filename]]]></db:parameterized-query>
         <set-variable variableName="older_than_1945" value="#[flowVars.dbResult.dc_rights_licenses == '&lt;dc_rights_licenses type=&#8221;list&#8221;&gt;&#8232; &lt;multiselect&gt;VIAA-ONDERWIJS&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-ONDERZOEK&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-INTRA_CP-CONTENT&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-INTRA_CP-METADATA-ALL&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-PUBLIEK-METADATA-ALL&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;VIAA-PUBLIEK-CONTENT&lt;/multiselect&gt;&#8232; &lt;multiselect&gt;Publiek Domein&lt;/multiselect&gt;&#8232;&lt;/dc_rights_licences&gt;' ? true: false]" doc:name="Set older_than_1945"/>
         <set-payload value="#[flowVars.mets]" mimeType="application/xml" doc:name="Set Payload with mets"/>
         <dw:transform-message doc:name="Transform Message">
-            <dw:input-payload doc:sample="sample_data/empty.xml"/>
-            <dw:input-variable doc:sample="sample_data/MyPojo.dwl" variableName="directory"/>
+            <dw:input-payload doc:sample="sample_data/source_mets.xml"/>
+            <dw:input-variable doc:sample="sample_data/fVars_directory.dwl" variableName="directory"/>
+            <dw:input-variable doc:sample="sample_data/fVars_pid.dwl" variableName="pid"/>
+            <dw:input-variable doc:sample="sample_data/fVars_gazet.dwl" variableName="gazet"/>
+            <dw:input-variable doc:sample="sample_data/fVars_allFiles.dwl" variableName="allFiles"/>
+            <dw:input-variable doc:sample="sample_data/fVars_older_than_1945.dwl" variableName="older_than_1945"/>
+            
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
