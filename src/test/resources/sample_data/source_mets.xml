@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mets xmlns="http://www.loc.gov/METS/" xmlns:DC="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:QualifiedDC="http://purl.org/dc/elements/1.1/" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+  <metsHdr CREATEDATE="2014-08-20T10:18:40">
+    <agent ROLE="DISSEMINATOR" ID="agent_1">
+      <name>some name</name>
+    </agent>
+    <agent ROLE="OTHER" ID="agent_2" OTHERROLE="Digitalisator">
+      <name>some digitalisator</name>
+    </agent>
+    <agent ROLE="ARCHIVIST" ID="agent_3">
+      <name>some archivist</name>
+    </agent>
+  </metsHdr>
+  <dmdSec ID="DC_METADATA">
+    <mdWrap MDTYPE="DC">
+      <xmlData>
+        <DC:dc>
+          <QualifiedDC:date>1944-10-14</QualifiedDC:date>
+          <QualifiedDC:identifier>Some identifier</QualifiedDC:identifier>
+          <QualifiedDC:language>dut</QualifiedDC:language>
+          <QualifiedDC:format>image/tiff</QualifiedDC:format>
+          <QualifiedDC:format>image/jpeg</QualifiedDC:format>
+          <QualifiedDC:format>text/xml</QualifiedDC:format>
+          <QualifiedDC:type xml:lang="dut">some type</QualifiedDC:type>
+          <QualifiedDC:rights xml:lang="dut">some rights</QualifiedDC:rights>
+          <QualifiedDC:identifier xml:lang="dut">some identifier</QualifiedDC:identifier>
+          <QualifiedDC:title xml:lang="dut">some title</QualifiedDC:title>
+          <QualifiedDC:title xml:lang="dut">some title</QualifiedDC:title>
+          <QualifiedDC:source xml:lang="dut">some source</QualifiedDC:source>
+        </DC:dc>
+      </xmlData>
+    </mdWrap>
+  </dmdSec>
+  <amdSec ID="AMD_TIF">
+    <techMD ID="AMD_TIF_0001">
+      <mdWrap MDTYPE="NISOIMG">
+        <xmlData>
+          <mix xmlns="http://www.loc.gov/mix/v10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mix/v10 http://www.loc.gov/standards/mix/mix10/mix10.xsd">
+            <BasicDigitalObjectInformation>
+              <ObjectIdentifier>
+                <objectIdentifierType>some type</objectIdentifierType>
+                <objectIdentifierValue>some value</objectIdentifierValue>
+              </ObjectIdentifier>
+              <fileSize>1</fileSize>
+              <FormatDesignation>
+                <formatName>image/tiff</formatName>
+                <formatVersion>6.0</formatVersion>
+              </FormatDesignation>
+              <byteOrder>little_endian</byteOrder>
+              <Compression>
+                <compressionScheme>Uncompressed</compressionScheme>
+              </Compression>
+              <Fixity>
+                <messageDigestAlgorithm>MD5</messageDigestAlgorithm>
+                <messageDigest>55163305A1EAA23AEEDB74A4BAAD7447</messageDigest>
+              </Fixity>
+            </BasicDigitalObjectInformation>
+            <BasicImageInformation>
+              <BasicImageCharacteristics>
+                <imageWidth>3186</imageWidth>
+                <imageHeight>4530</imageHeight>
+                <PhotometricInterpretation>
+                  <colorSpace>Uncalibrated</colorSpace>
+                </PhotometricInterpretation>
+              </BasicImageCharacteristics>
+            </BasicImageInformation>
+            <ImageCaptureMetadata>
+              <SourceInformation>
+                <SourceID>
+                  <sourceIDType>title</sourceIDType>
+                  <sourceIDValue>some value</sourceIDValue>
+                </SourceID>
+              </SourceInformation>
+              <GeneralCaptureInformation>
+                <dateTimeCreated>2014-08-19T10:21:02</dateTimeCreated>
+                <imageProducer>some producer</imageProducer>
+              </GeneralCaptureInformation>
+              <ScannerCapture>
+                <scannerManufacturer>some scanner manufacturer</scannerManufacturer>
+                <ScannerModel>
+                  <scannerModelName>some scanner model</scannerModelName>
+                </ScannerModel>
+                <ScanningSystemSoftware>
+                  <scanningSoftwareName>some scanning software</scanningSoftwareName>
+                </ScanningSystemSoftware>
+              </ScannerCapture>
+              <orientation>1</orientation>
+            </ImageCaptureMetadata>
+            <ImageAssessmentMetadata>
+              <SpatialMetrics>
+                <xSamplingFrequency>
+                  <numerator>300</numerator>
+                </xSamplingFrequency>
+                <ySamplingFrequency>
+                  <numerator>300</numerator>
+                </ySamplingFrequency>
+              </SpatialMetrics>
+              <ImageColorEncoding>
+                <bitsPerSample>
+                  <bitsPerSampleValue>8</bitsPerSampleValue>
+                  <bitsPerSampleUnit>integer</bitsPerSampleUnit>
+                </bitsPerSample>
+                <samplesPerPixel>3</samplesPerPixel>
+              </ImageColorEncoding>
+            </ImageAssessmentMetadata>
+            <extension>
+              <formatName>image/tiff</formatName>
+              <formatVersion>6.0</formatVersion>
+              <byteOrder>little_endian</byteOrder>
+              <Compression>Uncompressed</Compression>
+              <sourceType>
+              </sourceType>
+            </extension>
+          </mix>
+        </xmlData>
+      </mdWrap>
+    </techMD>
+    <techMD ID="AMD_TIF_0002">
+      <mdWrap MDTYPE="NISOIMG">
+        <xmlData>
+          <mix xmlns="http://www.loc.gov/mix/v10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mix/v10 http://www.loc.gov/standards/mix/mix10/mix10.xsd">
+            <BasicDigitalObjectInformation>
+              <ObjectIdentifier>
+                <objectIdentifierType>some type</objectIdentifierType>
+                <objectIdentifierValue>some value</objectIdentifierValue>
+              </ObjectIdentifier>
+              <fileSize>1</fileSize>
+              <FormatDesignation>
+                <formatName>image/tiff</formatName>
+                <formatVersion>6.0</formatVersion>
+              </FormatDesignation>
+              <byteOrder>little_endian</byteOrder>
+              <Compression>
+                <compressionScheme>Uncompressed</compressionScheme>
+              </Compression>
+              <Fixity>
+                <messageDigestAlgorithm>MD5</messageDigestAlgorithm>
+                <messageDigest>EF69185BBAAF2F443AC489630D06EC85</messageDigest>
+              </Fixity>
+            </BasicDigitalObjectInformation>
+                        <BasicImageInformation>
+              <BasicImageCharacteristics>
+                <imageWidth>3186</imageWidth>
+                <imageHeight>4530</imageHeight>
+                <PhotometricInterpretation>
+                  <colorSpace>Uncalibrated</colorSpace>
+                </PhotometricInterpretation>
+              </BasicImageCharacteristics>
+            </BasicImageInformation>
+            <ImageCaptureMetadata>
+              <SourceInformation>
+                <SourceID>
+                  <sourceIDType>title</sourceIDType>
+                  <sourceIDValue>some value</sourceIDValue>
+                </SourceID>
+              </SourceInformation>
+              <GeneralCaptureInformation>
+                <dateTimeCreated>2014-08-19T10:21:02</dateTimeCreated>
+                <imageProducer>some producer</imageProducer>
+              </GeneralCaptureInformation>
+              <ScannerCapture>
+                <scannerManufacturer>some scanner manufacturer</scannerManufacturer>
+                <ScannerModel>
+                  <scannerModelName>some scanner model</scannerModelName>
+                </ScannerModel>
+                <ScanningSystemSoftware>
+                  <scanningSoftwareName>some scanning software</scanningSoftwareName>
+                </ScanningSystemSoftware>
+              </ScannerCapture>
+              <orientation>1</orientation>
+            </ImageCaptureMetadata>
+            <ImageAssessmentMetadata>
+              <SpatialMetrics>
+                <xSamplingFrequency>
+                  <numerator>300</numerator>
+                </xSamplingFrequency>
+                <ySamplingFrequency>
+                  <numerator>300</numerator>
+                </ySamplingFrequency>
+              </SpatialMetrics>
+              <ImageColorEncoding>
+                <bitsPerSample>
+                  <bitsPerSampleValue>8</bitsPerSampleValue>
+                  <bitsPerSampleUnit>integer</bitsPerSampleUnit>
+                </bitsPerSample>
+                <samplesPerPixel>3</samplesPerPixel>
+              </ImageColorEncoding>
+            </ImageAssessmentMetadata>
+            <extension>
+              <formatName>image/tiff</formatName>
+              <formatVersion>6.0</formatVersion>
+              <byteOrder>little_endian</byteOrder>
+              <Compression>Uncompressed</Compression>
+              <sourceType>
+              </sourceType>
+            </extension>
+          </mix>
+        </xmlData>
+      </mdWrap>
+    </techMD>
+  </amdSec>
+  <fileSec>
+    <fileGrp ID="GRP_TIF" ADMID="AMD_TIF" USE="LONG TERM PRESERVATION IMAGES">
+      <file ID="GRP_TIF_0001" ADMID="AMD_TIF_0001" MIMETYPE="image/tiff">
+        <FLocat xlink:href="file:///./TIF/AVM_19441014_0001.tif" LOCTYPE="URL" />
+      </file>
+      <file ID="GRP_TIF_0002" ADMID="AMD_TIF_0002" MIMETYPE="image/tiff">
+        <FLocat xlink:href="file:///./TIF/AVM_19441014_0002.tif" LOCTYPE="URL" />
+      </file>
+    </fileGrp>
+    <fileGrp ID="GRP_JPG" USE="PRESENTATION IMAGES">
+      <file ID="GRP_JPG_0001" MIMETYPE="image/jpeg">
+        <FLocat xlink:href="file:///./JPG/AVM_19441014_0001.jpg" LOCTYPE="URL" />
+      </file>
+      <file ID="GRP_JPG_0002" MIMETYPE="image/jpeg">
+        <FLocat xlink:href="file:///./JPG/AVM_19441014_0002.jpg" LOCTYPE="URL" />
+      </file>
+    </fileGrp>
+    <fileGrp ID="GRP_ALTO" USE="OCR RESULTS">
+      <file ID="GRP_ALTO_0001" MIMETYPE="text/xml">
+        <FLocat xlink:href="file:///./Alto/AVM_19441014_0001.xml" LOCTYPE="URL" />
+      </file>
+      <file ID="GRP_ALTO_0002" MIMETYPE="text/xml">
+        <FLocat xlink:href="file:///./Alto/AVM_19441014_0002.xml" LOCTYPE="URL" />
+      </file>
+    </fileGrp>
+    <fileGrp ID="GRP_ISSUE_PDF" USE="COMPLETE PDF">
+      <file ID="GRP_CPDF_0001" MIMETYPE="application/pdf">
+        <FLocat xlink:href="file:///./AVM_19441014.pdf" LOCTYPE="URL" />
+      </file>
+    </fileGrp>
+  </fileSec>
+  <structMap>
+    <div DMDID="DC_METADATA" LABEL="AVM_19441014" TYPE="Document">
+      <div LABEL="Page_1" TYPE="Page">
+        <fptr FILEID="GRP_TIF_0001" />
+        <fptr FILEID="GRP_JPG_0001" />
+        <fptr FILEID="GRP_ALTO_0001" />
+      </div>
+      <div LABEL="Page_2" TYPE="Page">
+        <fptr FILEID="GRP_TIF_0002" />
+        <fptr FILEID="GRP_JPG_0002" />
+        <fptr FILEID="GRP_ALTO_0002" />
+      </div>
+    </div>
+  </structMap>
+</mets>
