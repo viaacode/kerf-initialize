@@ -94,7 +94,7 @@ AND batch_id = #[flowVars.batch_id]]]></db:parameterized-query>
 payload]]></dw:set-payload>
         </dw:transform-message>
         <set-variable variableName="pid" value="#[payload.pid]" doc:name="Set pid"/>
-        <set-variable variableName="batch_id" value="#[payload.correlation_id.split(&quot;|&quot;)[0]]" doc:name="Set batch_id with part of correlation_id"/>
+        <set-variable variableName="batch_id" value="#[payload.correlation_id.split(&quot;\\|&quot;)[0]]" doc:name="Set batch_id with part of correlation_id"/>
         <set-variable variableName="gazet" value="#[payload.correlation_id.split(&quot;|&quot;)[1]]" doc:name="Set gazet with part of correlation_id"/>
         <dw:transform-message doc:name="Set directory, metsFileBasePath and ftp credentials">
             <dw:input-payload doc:sample="sample_data/json.json"/>
