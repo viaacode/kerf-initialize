@@ -74,7 +74,8 @@ AND batch_id = #[flowVars.batch_id]]]></db:parameterized-query>
 	directory: "/export/home/viaa/incoming/kERF/" ++ flowVars.batch_id ++ "/" ++ flowVars.directory,
 	"excludes": [
 		"_complex",
-		"Thumbs.db"
+		"Thumbs.db",
+		"abbyy"
 	]
 }]]></dw:set-payload>
             </dw:transform-message>
