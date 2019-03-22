@@ -201,9 +201,9 @@ AND batch_id = #[flowVars.batch_id]]]></db:parameterized-query>
 					'PID': { '#text': flowVars.pid },
 					'dc_identifier_localids': {
 						'\$type': 'list',
-						'abraham_id': [{ '#text': ((payload..*identifier) filter (($ contains 'http://')))[0] replace 'http://anet.ua.ac.be/record/opacbnc/' with '' replace '/N' with '' }],
-						'abraham_uri': [{ '#text': ((payload..*identifier) filter (($ contains 'http://')))[0] }],
-						'code_nummer': [{ '#text': ((payload..*title) filter ((sizeOf $) == 3))[0] }]
+						'abraham_id': [{ '#text': (((payload..*identifier) filter (($ contains 'http://')))[0]) default "" replace 'http://anet.ua.ac.be/record/opacbnc/' with '' replace '/N' with '' }],
+						('abraham_uri': [{ '#text': (((payload..*identifier) filter (($ contains 'http://')))[0]) }]) when (sizeOf (((payload..*identifier) filter (($ contains 'http://'))))) > 0,
+						('code_nummer': [{ '#text': ((payload..*title) filter ((sizeOf $) == 3))[0] }]) when (sizeOf ((payload..*title) filter ((sizeOf $) == 3))) > 0
 					},
 					'dc_title': { '#text': ((payload..*title) filter ((sizeOf $) > 4))[0] },
 					'dc_description_categorie': { '#text': payload..type[0] },
