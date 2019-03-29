@@ -133,7 +133,8 @@ p('ftpSource.password')]]></dw:set-variable>
 ---
 payload..*file map {
 	id: $.@ID,
-	md5: lower payload..*messageDigest[$$] when payload..*messageDigest[$$] != null otherwise payload..*messageDigest[$$],
+	md5: (lower $.@CHECKSUM) when $.@CHECKSUM?
+		otherwise (lower payload..*messageDigest[$$] when payload..*messageDigest[$$] != null otherwise payload..*messageDigest[$$]),
 	//mimetype: $.@MIMETYPE,
 	//groupid: $.@GROUPID,
 	amdid: $.@ADMID,
