@@ -1,0 +1,56 @@
+@startuml kerf-initialize
+autonumber
+title kerf-initialize
+
+participant mule as "Mulesoft"
+database db as "POSTGRES"
+participant pid as "PID Webservice"
+participant rabbit as "RabbitMQ"
+participant lister as "NodeJS\nlisting-listener"
+participant fs as "FS\nftp.viaa.be"
+
+loop every 2 minutes
+    activate mule
+    mule -> db: Get 1 newspaper with status 'queued'
+    activate db
+    note right: table: kerf_gazetten
+    mule <-- db: newspaper
+    deactivate db
+    autonumber stop
+    opt newspaper has a pid?
+        mule -> pid: Request 1 new pid
+        activate pid
+        mule <-- pid: 1 pid
+        deactivate pid
+        mule -> db: Update newspaper with new pid
+    end
+    autonumber resume
+    mule -> db: Set newspaper to status 'requested_dir_listing'
+    mule -> mule: Make listing message with directory of newspaper
+    mule -> rabbit: Publish directory listing request
+    deactivate mule
+    activate rabbit
+    note right: queue: 'kranten_init_list_directory'
+end
+
+rabbit -> lister: Retrieve directory listing request
+activate lister
+lister -> fs: list
+lister <-- fs: return
+deactivate lister
+rabbit <-- lister: Publish recursive file listing
+note right: queue: 'kranten_init_listing_complete'
+rabbit -> mule: Retrieve recursive file listing
+activate mule
+mule -> fs: Read METS file
+activate fs
+mule <-- fs: METS file content
+deactivate fs
+mule -> db: Update kerf_files with MD5's from METS
+mule -> mule: Map METS metadata into JSON format
+mule -> rabbit: Publish initialize request
+note right: queue: 'kranten_initialize'
+mule -> db: Set newspaper to status 'processing'
+deactivate mule
+deactivate rabbit
+@enduml
